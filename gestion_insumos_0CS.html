@@ -328,6 +328,7 @@
   </div>
   <div class="header-spacer"></div>
   <span class="header-badge">0CS Sistema</span>
+  <span id="sync-status" style="font-size:.72rem;margin-left:10px">⏳ Conectando...</span>
 </header>
 
 <nav>
@@ -506,10 +507,32 @@
       <button class="btn btn-secondary" onclick="window.print()">Imprimir todos</button>
     </div>
 
+    <!-- SINCRONIZACIÓN DE DATOS -->
+    <div class="panel" style="border-left: 3px solid var(--accent);">
+      <h2>Sincronizar datos con el celular</h2>
+      <p class="text-muted" style="margin-bottom:16px">
+        Los datos se guardan en cada dispositivo por separado. Usa estos botones para copiar toda la información de tu computador al celular.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div>
+          <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px">① En el computador</p>
+          <button class="btn btn-primary" onclick="exportarJSON()">↓ Exportar datos (JSON)</button>
+        </div>
+        <div style="color:var(--muted);font-size:1.4rem;padding:16px 4px">→</div>
+        <div>
+          <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px">② En el celular</p>
+          <label class="btn btn-success" style="cursor:pointer">
+            ↑ Importar datos (JSON)
+            <input type="file" accept=".json" id="importar-json-input" style="display:none" onchange="importarJSON(event)" />
+          </label>
+        </div>
+      </div>
+      <div id="sync-mensaje" style="margin-top:12px"></div>
+    </div>
+
     <div class="qr-aviso">
-      ⚡ <strong>¿Cómo funciona?</strong> Al escanear el QR con el teléfono se abre esta app con el cliente y la máquina ya seleccionados.
-      Para que funcione desde el celular, ingresa aquí la URL donde tengas alojada la app (p.ej. en GitHub Pages o Netlify).
-      Si la usas solo en tu computador, deja la URL vacía y el QR abrirá el archivo local.
+      ⚡ <strong>¿Cómo funciona el QR?</strong> Al escanear con el teléfono se abre esta app con el cliente y la máquina ya seleccionados.
+      Para que funcione desde el celular, ingresa la URL de GitHub Pages abajo y haz clic en Generar QR.
     </div>
 
     <div class="panel">
@@ -591,6 +614,7 @@ function cargarDB() {
 }
 function guardarDB() {
   localStorage.setItem('0cs_db_v2', JSON.stringify(DB));
+  pushFirebase();
 }
 
 // ── utilidades ──────────────────────────────────────────
@@ -1039,6 +1063,48 @@ function exportarExcel(modo) {
 }
 
 // ══════════════════════════════════════════════════════════
+//  EXPORTAR / IMPORTAR JSON (sincronización entre dispositivos)
+// ══════════════════════════════════════════════════════════
+function exportarJSON() {
+  const json     = JSON.stringify(DB, null, 2);
+  const blob     = new Blob([json], { type: 'application/json' });
+  const url      = URL.createObjectURL(blob);
+  const link     = document.createElement('a');
+  link.href      = url;
+  link.download  = `CafeBreak_datos_${hoy()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function importarJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const datos = JSON.parse(e.target.result);
+      // Validación mínima
+      if (!datos.clientes || !datos.cargas || !datos.precios) {
+        mostrarMensaje('sync-mensaje', '⚠️ El archivo no tiene el formato correcto.', 'rojo');
+        return;
+      }
+      DB = datos;
+      guardarDB();
+      renderDashboard();
+      poblarFiltros();
+      poblarSelectClientes();
+      mostrarMensaje('sync-mensaje',
+        `✅ Datos importados: ${datos.clientes.length} cliente(s) y ${datos.cargas.length} carga(s).`, 'verde');
+    } catch(err) {
+      mostrarMensaje('sync-mensaje', '⚠️ Error al leer el archivo. Asegúrate que sea un JSON válido.', 'rojo');
+    }
+    // Reset input para poder importar de nuevo si es necesario
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════════════════════════════════════
 //  QR CODES
 // ══════════════════════════════════════════════════════════
 function guardarBaseUrl() {
@@ -1112,16 +1178,94 @@ function inicializarQR() {
 }
 
 // ══════════════════════════════════════════════════════════
+//  FIREBASE SYNC
+// ══════════════════════════════════════════════════════════
+const FIREBASE_URL = 'https://cafebreak-712be-default-rtdb.firebaseio.com';
+
+function setSyncStatus(estado) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const estados = {
+    ok:        '<span style="color:#4ade80;font-size:.72rem">● Sincronizado</span>',
+    guardando: '<span style="color:#fbbf24;font-size:.72rem">● Guardando...</span>',
+    error:     '<span style="color:#f87171;font-size:.72rem">● Sin conexión</span>',
+    cargando:  '<span style="color:#94a3b8;font-size:.72rem">⏳ Cargando...</span>',
+  };
+  el.innerHTML = estados[estado] || '';
+}
+
+async function pushFirebase() {
+  setSyncStatus('guardando');
+  try {
+    const res = await fetch(`${FIREBASE_URL}/db.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(DB)
+    });
+    if (res.ok) setSyncStatus('ok');
+    else setSyncStatus('error');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
+async function pullFirebase() {
+  setSyncStatus('cargando');
+  try {
+    const res  = await fetch(`${FIREBASE_URL}/db.json`);
+    const data = await res.json();
+    if (data && Array.isArray(data.clientes)) {
+      DB = data;
+      localStorage.setItem('0cs_db_v2', JSON.stringify(DB));
+      setSyncStatus('ok');
+      return true;
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════
-cargarDB();
-document.getElementById('nc-fecha').value = hoy();
-buildProductosInputs();
-poblarSelectClientes();
-poblarFiltros();
-renderDashboard();
-inicializarQR();
-leerParamsURL();
+async function init() {
+  cargarDB(); // Carga local primero (respuesta instantánea)
+  document.getElementById('nc-fecha').value = hoy();
+  buildProductosInputs();
+  poblarSelectClientes();
+  poblarFiltros();
+  renderDashboard();
+  inicializarQR();
+
+  // Luego sincroniza con Firebase
+  const ok = await pullFirebase();
+  if (ok) {
+    renderDashboard();
+    poblarFiltros();
+    poblarSelectClientes();
+    if (document.getElementById('clientes').classList.contains('activa')) renderClientes();
+    if (document.getElementById('historial').classList.contains('activa')) renderHistorial();
+  }
+
+  leerParamsURL();
+
+  // Auto-sincronizar cada 30 segundos para capturar cambios de otros dispositivos
+  setInterval(async () => {
+    const actualizado = await pullFirebase();
+    if (actualizado) {
+      renderDashboard();
+      poblarFiltros();
+      poblarSelectClientes();
+      const activa = document.querySelector('.seccion.activa')?.id;
+      if (activa === 'historial') renderHistorial();
+      if (activa === 'clientes')  renderClientes();
+    }
+  }, 30000);
+}
+
+init();
 </script>
 </body>
 </html>
