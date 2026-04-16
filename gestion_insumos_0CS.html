@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de Insumos — Máquinas 0CS</title>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -280,7 +279,7 @@
     .qr-card .qr-cliente {
       font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .4px;
     }
-    .qr-card canvas { border-radius: 6px; border: 1px solid var(--border); }
+    .qr-card img.qr-img { border-radius: 6px; border: 1px solid var(--border); width: 160px; height: 160px; display: block; }
     .qr-card .btn { width: 100%; justify-content: center; margin-top: 4px; }
 
     @media print {
@@ -1059,41 +1058,28 @@ function renderQRs() {
   }
 
   const base = getBaseUrl();
-  cont.innerHTML = '<div class="qr-grid" id="qr-grid"></div>';
-  const grid = document.getElementById('qr-grid');
+  let html = '<div class="qr-grid">';
 
   DB.clientes.forEach(cl => {
     cl.maquinas.forEach(maq => {
-      const url = `${base}?cliente=${cl.id}&maquina=${encodeURIComponent(maq)}`;
+      const destUrl  = `${base}?cliente=${cl.id}&maquina=${encodeURIComponent(maq)}`;
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&color=18181b&bgcolor=ffffff&data=${encodeURIComponent(destUrl)}`;
 
-      const card = document.createElement('div');
-      card.className = 'qr-card';
-      card.innerHTML = `
-        <div class="qr-cliente">${cl.nombre}</div>
-        <div class="qr-maquina">${maq}</div>
-        <canvas id="qr-${cl.id}-${maq.replace(/\W/g,'_')}"></canvas>
-        <button class="btn btn-secondary" style="font-size:.78rem;padding:7px 12px"
-          onclick="descargarQR('qr-${cl.id}-${maq.replace(/\W/g,'_')}', '${maq}')">
-          Descargar PNG
-        </button>`;
-      grid.appendChild(card);
-
-      QRCode.toCanvas(
-        document.getElementById(`qr-${cl.id}-${maq.replace(/\W/g,'_')}`),
-        url,
-        { width: 160, margin: 2, color: { dark: '#18181b', light: '#ffffff' } },
-        err => { if (err) console.error(err); }
-      );
+      html += `
+        <div class="qr-card">
+          <div class="qr-cliente">${cl.nombre}</div>
+          <div class="qr-maquina">${maq}</div>
+          <img class="qr-img" src="${qrApiUrl}" alt="QR ${maq}" loading="lazy" />
+          <a class="btn btn-secondary" style="font-size:.78rem;padding:7px 12px;text-decoration:none"
+             href="${qrApiUrl}&format=png" download="QR_${maq.replace(/\s/g,'_')}.png" target="_blank">
+            Descargar PNG
+          </a>
+        </div>`;
     });
   });
-}
 
-function descargarQR(canvasId, maquina) {
-  const canvas = document.getElementById(canvasId);
-  const link = document.createElement('a');
-  link.download = `QR_${maquina.replace(/\s/g,'_')}.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+  html += '</div>';
+  cont.innerHTML = html;
 }
 
 // ── Leer parámetros URL al cargar (para el celular) ────────
