@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Insumos — Máquinas 0CS</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:       #f0f2f5;
+      --surface:  #ffffff;
+      --primary:  #18181b;
+      --accent:   #b8880e;
+      --accent2:  #d4a017;
+      --text:     #18181b;
+      --muted:    #71717a;
+      --border:   #e4e4e7;
+      --hover:    #f4f4f5;
+      --success:  #16a34a;
+      --danger:   #dc2626;
+      --info:     #2563eb;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 0 36px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 2px solid var(--accent);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-logo {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; letter-spacing: .3px; }
+    header p  { font-size: .75rem; color: #a1a1aa; margin-top: 1px; }
+    .header-spacer { flex: 1; }
+    .header-badge {
+      background: rgba(184,136,14,.15);
+      border: 1px solid rgba(184,136,14,.4);
+      color: var(--accent2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0;
+      padding: 0 28px;
+      overflow-x: auto;
+    }
+    nav button {
+      background: none; border: none; color: var(--muted);
+      padding: 14px 18px; cursor: pointer; font-size: .83rem; font-weight: 500;
+      border-bottom: 2px solid transparent; transition: all .15s;
+      white-space: nowrap; font-family: inherit; letter-spacing: .1px;
+    }
+    nav button:hover  { color: var(--text); background: var(--hover); }
+    nav button.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--accent); }
+
+    /* ── LAYOUT ── */
+    main { padding: 28px 36px; max-width: 1320px; margin: 0 auto; }
+    .seccion { display: none; }
+    .seccion.activa { display: block; }
+
+    .page-title {
+      font-size: 1.25rem; font-weight: 700; color: var(--primary);
+      margin-bottom: 20px; letter-spacing: -.3px;
+    }
+    .page-title span { color: var(--accent); }
+
+    /* ── CARDS ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      border-left: 3px solid var(--accent);
+    }
+    .card .icon  { font-size: 1.3rem; margin-bottom: 8px; opacity: .7; }
+    .card .valor { font-size: 1.65rem; font-weight: 700; color: var(--primary); line-height: 1; }
+    .card .label { font-size: .72rem; color: var(--muted); margin-top: 5px; text-transform: uppercase; letter-spacing: .4px; }
+
+    /* ── PANEL ── */
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 22px 24px; margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .panel h2 {
+      font-size: .9rem; font-weight: 700; color: var(--primary);
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase; letter-spacing: .6px;
+    }
+
+    /* ── FORMULARIOS ── */
+    .grid-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .form-group input, .form-group select {
+      border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; font-size: .88rem;
+      background: var(--surface); color: var(--text); transition: border-color .15s, box-shadow .15s;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(184,136,14,.12);
+    }
+    .form-group input::placeholder { color: #c4c4c8; }
+
+    /* ── BOTONES ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px;
+      border: none; border-radius: 7px; cursor: pointer; font-size: .83rem; font-weight: 600;
+      transition: all .15s; font-family: inherit; letter-spacing: .1px;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary   { background: var(--primary); color: #fff; }
+    .btn-primary:hover  { background: #27272a; }
+    .btn-success   { background: var(--success); color: #fff; }
+    .btn-success:hover  { background: #15803d; }
+    .btn-danger    { background: var(--danger); color: #fff; padding: 6px 12px; font-size: .78rem; }
+    .btn-danger:hover   { background: #b91c1c; }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--hover); }
+    .btn-accent    { background: var(--accent); color: #fff; }
+    .btn-accent:hover   { background: var(--accent2); }
+    .btn-row { display: flex; gap: 8px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+
+    /* ── TABLAS ── */
+    .tabla-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    thead tr { background: var(--primary); }
+    thead th {
+      padding: 11px 13px; text-align: left; font-weight: 600; white-space: nowrap;
+      color: #e4e4e7; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--hover); }
+    tbody td { padding: 10px 13px; vertical-align: middle; color: var(--text); }
+    .badge {
+      display: inline-block; padding: 3px 8px; border-radius: 5px;
+      font-size: .72rem; font-weight: 600; letter-spacing: .2px;
+    }
+    .badge-cafe  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-verde { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+
+    /* ── FILTROS ── */
+    .filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+    .filtros .form-group { min-width: 150px; }
+
+    /* ── PRODUCTOS GRID (nueva carga) ── */
+    .productos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px; margin: 14px 0 18px;
+    }
+    .producto-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 12px; text-align: center;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .producto-card:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(184,136,14,.1);
+    }
+    .producto-card .p-icon   { font-size: 1.3rem; opacity: .75; }
+    .producto-card .p-nombre { font-size: .76rem; font-weight: 600; color: var(--primary); margin: 6px 0 10px; line-height: 1.3; }
+    .producto-card .p-unidad { font-size: .68rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .3px; }
+    .producto-card input {
+      width: 100%; text-align: center; font-weight: 600; font-size: .9rem;
+    }
+
+    /* ── RESUMEN COSTOS ── */
+    .costo-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 18px; margin: 14px 0 0;
+    }
+    .resumen-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid var(--border); font-size: .85rem;
+    }
+    .resumen-row:last-child {
+      border-bottom: none; font-weight: 700; font-size: .95rem;
+      margin-top: 6px; padding-top: 10px; color: var(--primary);
+    }
+    .resumen-row .monto { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .resumen-row:last-child .monto { font-size: 1.05rem; color: var(--primary); }
+
+    /* ── PRECIOS ── */
+    .precio-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 8px; flex-wrap: wrap;
+      transition: border-color .15s;
+    }
+    .precio-item:focus-within { border-color: var(--accent); }
+    .precio-item .ins-label { flex: 1; min-width: 180px; font-weight: 600; font-size: .88rem; display: flex; align-items: center; gap: 8px; }
+    .precio-item .uni-tag   { font-size: .72rem; color: var(--muted); background: var(--border); padding: 2px 7px; border-radius: 4px; }
+    .precio-item input      { width: 140px; }
+
+    /* ── ALERTAS / MENSAJES ── */
+    .msg-ok  { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; border-radius: 7px; padding: 10px 14px; font-size: .83rem; }
+    .msg-err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: 7px; padding: 10px 14px; font-size: .83rem; }
+
+    /* ── UTILS ── */
+    .text-right { text-align: right; }
+    .text-muted { color: var(--muted); font-size: .8rem; }
+    .mt-12 { margin-top: 12px; }
+    .mt-20 { margin-top: 20px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+    /* ── SECTION HEADER ROW ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+    }
+    .section-header h1 { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+
+    /* ── QR CODES ── */
+    .qr-url-box {
+      display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 18px; margin-bottom: 18px;
+    }
+    .qr-url-box .form-group { flex: 1; min-width: 260px; }
+    .qr-aviso {
+      background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+      padding: 12px 16px; font-size: .82rem; color: #92400e; margin-bottom: 18px;
+      line-height: 1.6;
+    }
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .qr-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 14px; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .qr-card .qr-maquina {
+      font-size: .95rem; font-weight: 700; color: var(--primary); letter-spacing: .3px;
+    }
+    .qr-card .qr-cliente {
+      font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .4px;
+    }
+    .qr-card canvas { border-radius: 6px; border: 1px solid var(--border); }
+    .qr-card .btn { width: 100%; justify-content: center; margin-top: 4px; }
+
+    @media print {
+      header, nav, .qr-url-box, .qr-aviso, .btn, .section-header { display: none !important; }
+      .qr-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .qr-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    }
+
+    @media (max-width: 640px) {
+      main { padding: 16px; }
+      header { padding: 0 16px; }
+      nav { padding: 0 8px; }
+      nav button { padding: 12px 12px; font-size: .8rem; }
+    }
+
+    /* ── OUTLOOK CONNECTOR ── */
+    .ol-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #0078d4; color: #fff;
+      padding: 3px 9px; border-radius: 20px;
+      font-size: .7rem; font-weight: 600; letter-spacing: .4px;
+    }
+    .email-preview {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 18px; margin-top: 14px;
+      font-family: 'Courier New', monospace; font-size: .78rem;
+      line-height: 1.7; white-space: pre-wrap;
+      max-height: 280px; overflow-y: auto; color: var(--text);
+    }
+    .btn-outlook { background: #0078d4; color: #fff; }
+    .btn-outlook:hover { background: #106ebe; }
+    .ics-info-box {
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 8px; padding: 12px 16px;
+      font-size: .82rem; color: #1e40af; margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">☕</div>
+  <div>
+    <h1>Café Break</h1>
+    <p>Gestión de insumos · Máquinas 0CS</p>
+  </div>
+  <div class="header-spacer"></div>
+  <span class="header-badge">0CS Sistema</span>
+</header>
+
+<nav>
+  <button class="active" onclick="mostrarSeccion('dashboard', this)">Resumen</button>
+  <button onclick="mostrarSeccion('nueva-carga', this)">Nueva Carga</button>
+  <button onclick="mostrarSeccion('historial', this)">Historial</button>
+  <button onclick="mostrarSeccion('clientes', this)">Clientes</button>
+  <button onclick="mostrarSeccion('precios', this)">Precios</button>
+  <button onclick="mostrarSeccion('qrcodes', this)">Códigos QR</button>
+  <button onclick="mostrarSeccion('outlook', this)">📧 Outlook</button>
+</nav>
+
+<main>
+
+  <!-- ===== DASHBOARD ===== -->
+  <section id="dashboard" class="seccion activa">
+    <div class="section-header">
+      <h1>Resumen general</h1>
+    </div>
+    <div class="cards" id="cards-resumen"></div>
+    <div class="panel">
+      <h2>Cargas recientes</h2>
+      <div class="tabla-wrapper">
+        <table id="tabla-recientes">
+          <thead><tr id="thead-recientes"></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== NUEVA CARGA ===== -->
+  <section id="nueva-carga" class="seccion">
+    <div class="section-header"><h1>Nueva carga</h1></div>
+    <div class="panel">
+      <h2>Datos de la carga</h2>
+      <div class="grid-form">
+        <div class="form-group" style="grid-column: span 2">
+          <label>Cliente</label>
+          <select id="nc-cliente" onchange="actualizarMaquinasNC()">
+            <option value="">— Seleccionar cliente —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>N° de Máquina</label>
+          <select id="nc-maquina">
+            <option value="">— Primero seleccionar cliente —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fecha de carga</label>
+          <input type="date" id="nc-fecha" />
+        </div>
+      </div>
+
+      <hr class="divider" />
+      <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px">Cantidades por producto</p>
+      <div class="productos-grid" id="productos-inputs"></div>
+
+      <div class="costo-box">
+        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px">Resumen de costo</p>
+        <div id="preview-costo"></div>
+      </div>
+
+      <div class="form-group mt-12">
+        <label>Observaciones (opcional)</label>
+        <input type="text" id="nc-obs" placeholder="Ej: Carga completa mensual" />
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="guardarCarga()">Guardar carga</button>
+        <button class="btn btn-secondary" onclick="limpiarFormulario()">Limpiar</button>
+      </div>
+      <div id="nc-mensaje" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ===== HISTORIAL ===== -->
+  <section id="historial" class="seccion">
+    <div class="section-header"><h1>Historial de cargas</h1></div>
+    <div class="panel">
+      <h2>Filtros</h2>
+      <div class="filtros">
+        <div class="form-group">
+          <label>Cliente</label>
+          <select id="fil-cliente" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group">
+          <label>Máquina</label>
+          <select id="fil-maquina" onchange="aplicarFiltros()"><option value="">Todas</option></select>
+        </div>
+        <div class="form-group">
+          <label>Desde</label>
+          <input type="date" id="fil-desde" onchange="aplicarFiltros()" />
+        </div>
+        <div class="form-group">
+          <label>Hasta</label>
+          <input type="date" id="fil-hasta" onchange="aplicarFiltros()" />
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button class="btn btn-secondary" onclick="limpiarFiltros()">Limpiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <p style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--primary)">Registro de cargas</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-accent" onclick="exportarExcel('filtro')">↓ Exportar filtro a Excel</button>
+          <button class="btn btn-secondary" onclick="exportarExcel('todo')">↓ Exportar todo a Excel</button>
+        </div>
+      </div>
+      <div class="tabla-wrapper">
+        <table id="tabla-historial">
+          <thead><tr id="thead-historial"></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="historial-totales" class="mt-12 text-right"></div>
+    </div>
+  </section>
+
+  <!-- ===== CLIENTES ===== -->
+  <section id="clientes" class="seccion">
+    <div class="section-header"><h1>Clientes</h1></div>
+    <div class="panel">
+      <h2>Agregar cliente</h2>
+      <div class="grid-form">
+        <div class="form-group">
+          <label>Nombre del cliente</label>
+          <input type="text" id="cli-nombre" placeholder="Ej: Empresa ABC" />
+        </div>
+        <div class="form-group">
+          <label>N° de máquinas — separadas por coma</label>
+          <input type="text" id="cli-maquinas" placeholder="Ej: 0CS-001, 0CS-002" />
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="agregarCliente()">Agregar cliente</button>
+        </div>
+      </div>
+      <div id="cli-mensaje" style="margin-top:10px"></div>
+    </div>
+    <div class="panel">
+      <h2>Lista de clientes</h2>
+      <div class="tabla-wrapper">
+        <table id="tabla-clientes">
+          <thead><tr>
+            <th>Cliente</th><th>Máquinas</th><th>Total cargas</th><th>Costo acumulado</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRECIOS ===== -->
+  <section id="precios" class="seccion">
+    <div class="section-header"><h1>Precios por producto</h1></div>
+    <div class="panel">
+      <h2>Precio unitario</h2>
+      <p class="text-muted" style="margin-bottom:16px">Ingresa el precio por unidad de cada producto. Se usa para calcular el costo de cada carga.</p>
+      <div id="lista-precios"></div>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="guardarPrecios()">Guardar precios</button>
+      </div>
+      <div id="pr-mensaje" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- ===== QR CODES ===== -->
+  <section id="qrcodes" class="seccion">
+    <div class="section-header">
+      <h1>Códigos QR por máquina</h1>
+      <button class="btn btn-secondary" onclick="window.print()">Imprimir todos</button>
+    </div>
+
+    <div class="qr-aviso">
+      ⚡ <strong>¿Cómo funciona?</strong> Al escanear el QR con el teléfono se abre esta app con el cliente y la máquina ya seleccionados.
+      Para que funcione desde el celular, ingresa aquí la URL donde tengas alojada la app (p.ej. en GitHub Pages o Netlify).
+      Si la usas solo en tu computador, deja la URL vacía y el QR abrirá el archivo local.
+    </div>
+
+    <div class="panel">
+      <h2>URL base de la aplicación</h2>
+      <div class="qr-url-box">
+        <div class="form-group">
+          <label>URL donde está alojada la app</label>
+          <input type="url" id="qr-base-url"
+            placeholder="https://tu-usuario.github.io/cafebreak/gestion_insumos_0CS.html"
+            oninput="guardarBaseUrl()" />
+        </div>
+        <button class="btn btn-primary" onclick="renderQRs()">Generar QR</button>
+      </div>
+      <p class="text-muted">Si no tienes URL, déjalo vacío. Los QR funcionarán solo en este computador.</p>
+    </div>
+
+    <div id="qr-contenedor">
+      <div style="text-align:center;padding:40px;color:var(--muted)">
+        Agrega clientes y máquinas primero, luego haz clic en <strong>Generar QR</strong>.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CATÁLOGO DE PRODUCTOS (fuente de verdad)
+// ══════════════════════════════════════════════════════════
+const PRODUCTOS = [
+  { id: 'lavazza',      nombre: 'Café Lavazza',   icon: '☕', unidad: 'kg'  },
+  { id: 'garibaldi',    nombre: 'Café Garibaldi', icon: '☕', unidad: 'kg'  },
+  { id: 'leche_top',    nombre: 'Leche Top',      icon: '🥛', unidad: 'L'   },
+  { id: 'chocolate',    nombre: 'Chocolate',      icon: '🍫', unidad: 'kg'  },
+  { id: 'vainilla',     nombre: 'Vainilla',       icon: '🌿', unidad: 'L'   },
+  { id: 'vasos',        nombre: 'Vasos',          icon: '🥤', unidad: 'uni' },
+  { id: 'revolvedores', nombre: 'Revolvedores',   icon: '🥄', unidad: 'uni' },
+];
+
+// ══════════════════════════════════════════════════════════
+//  BASE DE DATOS (localStorage)
+// ══════════════════════════════════════════════════════════
+let DB = {
+  clientes: [],   // { id, nombre, maquinas[] }
+  cargas:   [],   // { id, fecha, clienteId, maquina, cantidades:{productoId:valor}, total, obs }
+  precios:  {},   // { productoId: precio }
+};
+
+function cargarDB() {
+  const raw = localStorage.getItem('0cs_db_v2');
+  if (raw) DB = JSON.parse(raw);
+  // Migrar desde versión anterior si existe
+  const oldRaw = localStorage.getItem('0cs_db');
+  if (oldRaw && !raw) {
+    try {
+      const old = JSON.parse(oldRaw);
+      DB.clientes = old.clientes || [];
+      // Migrar precios
+      if (old.precios) {
+        DB.precios.chocolate  = old.precios.chocolate  || 0;
+        DB.precios.lavazza    = old.precios.cafe        || 0;
+        DB.precios.leche_top  = old.precios.leche       || 0;
+        DB.precios.vainilla   = old.precios.vainilla    || 0;
+      }
+      // Migrar cargas
+      DB.cargas = (old.cargas || []).map(c => ({
+        id: c.id, fecha: c.fecha, clienteId: c.clienteId, maquina: c.maquina,
+        cantidades: {
+          chocolate: c.chocolate || 0,
+          lavazza:   c.cafe      || 0,
+          leche_top: c.leche     || 0,
+          vainilla:  c.vainilla  || 0,
+        },
+        total: c.total || 0, obs: c.obs || '',
+      }));
+      guardarDB();
+    } catch(e) {}
+  }
+}
+function guardarDB() {
+  localStorage.setItem('0cs_db_v2', JSON.stringify(DB));
+}
+
+// ── utilidades ──────────────────────────────────────────
+function hoy() { return new Date().toISOString().split('T')[0]; }
+function fmt(n) {
+  return '$\u202F' + Number(n || 0).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function prodPorId(id) { return PRODUCTOS.find(p => p.id === id); }
+function mostrarMensaje(elId, texto, tipo) {
+  const el = document.getElementById(elId);
+  el.innerHTML = `<div class="${tipo==='verde'?'msg-ok':'msg-err'}">${texto}</div>`;
+  setTimeout(() => { el.innerHTML = ''; }, 4000);
+}
+
+// ══════════════════════════════════════════════════════════
+//  NAVEGACIÓN
+// ══════════════════════════════════════════════════════════
+function mostrarSeccion(id, btn) {
+  document.querySelectorAll('.seccion').forEach(s => s.classList.remove('activa'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('activa');
+  btn.classList.add('active');
+  if (id === 'dashboard')   renderDashboard();
+  if (id === 'historial')   renderHistorial();
+  if (id === 'clientes')    renderClientes();
+  if (id === 'nueva-carga') { buildProductosInputs(); poblarSelectClientes(); calcularPreviewCosto(); }
+  if (id === 'precios')     buildFormPrecios();
+  if (id === 'qrcodes')     { inicializarQR(); renderQRs(); }
+}
+
+// ══════════════════════════════════════════════════════════
+//  PRECIOS
+// ══════════════════════════════════════════════════════════
+function buildFormPrecios() {
+  const cont = document.getElementById('lista-precios');
+  cont.innerHTML = PRODUCTOS.map(p => `
+    <div class="precio-item">
+      <span class="ins-label">${p.icon} ${p.nombre}</span>
+      <span class="uni-tag">$ / ${p.unidad}</span>
+      <div class="form-group">
+        <input type="number" id="pr-${p.id}" min="0" step="1"
+               value="${DB.precios[p.id] || ''}" placeholder="0" />
+      </div>
+    </div>`).join('');
+}
+function guardarPrecios() {
+  PRODUCTOS.forEach(p => {
+    DB.precios[p.id] = parseFloat(document.getElementById('pr-' + p.id).value) || 0;
+  });
+  guardarDB();
+  mostrarMensaje('pr-mensaje', '✅ Precios guardados correctamente.', 'verde');
+}
+
+function calcularCosto(cantidades) {
+  return PRODUCTOS.reduce((sum, p) => sum + (cantidades[p.id] || 0) * (DB.precios[p.id] || 0), 0);
+}
+
+// ══════════════════════════════════════════════════════════
+//  NUEVA CARGA — inputs de productos generados dinámicamente
+// ══════════════════════════════════════════════════════════
+function buildProductosInputs() {
+  const cont = document.getElementById('productos-inputs');
+  cont.innerHTML = PRODUCTOS.map(p => `
+    <div class="producto-card">
+      <div class="p-icon">${p.icon}</div>
+      <div class="p-nombre">${p.nombre}</div>
+      <div class="form-group">
+        <input type="number" id="nc-${p.id}" min="0" step="0.01" placeholder="0"
+               oninput="calcularPreviewCosto()" />
+      </div>
+      <div class="p-unidad">${p.unidad}</div>
+    </div>`).join('');
+}
+
+function calcularPreviewCosto() {
+  const cantidades = {};
+  PRODUCTOS.forEach(p => {
+    cantidades[p.id] = parseFloat(document.getElementById('nc-' + p.id)?.value) || 0;
+  });
+  let total = 0;
+  let html = '';
+  PRODUCTOS.forEach(p => {
+    const cant  = cantidades[p.id];
+    const precio = DB.precios[p.id] || 0;
+    if (!cant) return;
+    const sub = cant * precio;
+    total += sub;
+    html += `<div class="resumen-row">
+      <span>${p.icon} ${p.nombre} — ${cant} ${p.unidad} × ${fmt(precio)}</span>
+      <span class="monto">${fmt(sub)}</span>
+    </div>`;
+  });
+  if (!html) html = '<p class="text-muted">Ingresa cantidades para ver el costo.</p>';
+  html += `<div class="resumen-row"><span>Total carga</span><span class="monto">${fmt(total)}</span></div>`;
+  document.getElementById('preview-costo').innerHTML = html;
+}
+
+function guardarCarga() {
+  const clienteId = parseInt(document.getElementById('nc-cliente').value);
+  const maquina   = document.getElementById('nc-maquina').value;
+  const fecha     = document.getElementById('nc-fecha').value;
+  if (!clienteId) { mostrarMensaje('nc-mensaje', '⚠️ Selecciona un cliente.', 'rojo'); return; }
+  if (!maquina)   { mostrarMensaje('nc-mensaje', '⚠️ Selecciona una máquina.', 'rojo'); return; }
+  if (!fecha)     { mostrarMensaje('nc-mensaje', '⚠️ Ingresa la fecha.', 'rojo'); return; }
+
+  const cantidades = {};
+  PRODUCTOS.forEach(p => {
+    cantidades[p.id] = parseFloat(document.getElementById('nc-' + p.id)?.value) || 0;
+  });
+
+  const carga = {
+    id: Date.now(), fecha, clienteId, maquina, cantidades,
+    total: calcularCosto(cantidades),
+    obs: document.getElementById('nc-obs').value.trim(),
+  };
+  DB.cargas.push(carga);
+  guardarDB();
+  limpiarFormulario();
+  mostrarMensaje('nc-mensaje', '✅ Carga registrada exitosamente.', 'verde');
+}
+
+function limpiarFormulario() {
+  PRODUCTOS.forEach(p => {
+    const el = document.getElementById('nc-' + p.id);
+    if (el) el.value = '';
+  });
+  document.getElementById('nc-obs').value = '';
+  document.getElementById('nc-fecha').value = hoy();
+  calcularPreviewCosto();
+}
+
+function poblarSelectClientes() {
+  const sel = document.getElementById('nc-cliente');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Seleccionar cliente —</option>';
+  DB.clientes.forEach(cl => {
+    sel.innerHTML += `<option value="${cl.id}" ${cl.id == cur ? 'selected':''}>${cl.nombre}</option>`;
+  });
+  actualizarMaquinasNC();
+}
+function actualizarMaquinasNC() {
+  const clienteId = parseInt(document.getElementById('nc-cliente').value);
+  const sel = document.getElementById('nc-maquina');
+  sel.innerHTML = '<option value="">— Seleccionar máquina —</option>';
+  if (!clienteId) return;
+  const cl = DB.clientes.find(c => c.id === clienteId);
+  if (!cl) return;
+  cl.maquinas.forEach(m => { sel.innerHTML += `<option value="${m}">${m}</option>`; });
+}
+
+// ══════════════════════════════════════════════════════════
+//  CLIENTES
+// ══════════════════════════════════════════════════════════
+function agregarCliente() {
+  const nombre = document.getElementById('cli-nombre').value.trim();
+  const maqRaw = document.getElementById('cli-maquinas').value.trim();
+  if (!nombre) { mostrarMensaje('cli-mensaje', '⚠️ Ingresa el nombre del cliente.', 'rojo'); return; }
+  if (!maqRaw)  { mostrarMensaje('cli-mensaje', '⚠️ Ingresa al menos un número de máquina.', 'rojo'); return; }
+  const maquinas = maqRaw.split(',').map(m => m.trim()).filter(Boolean);
+  DB.clientes.push({ id: Date.now(), nombre, maquinas });
+  guardarDB();
+  document.getElementById('cli-nombre').value   = '';
+  document.getElementById('cli-maquinas').value = '';
+  renderClientes();
+  poblarFiltros();
+  mostrarMensaje('cli-mensaje', `✅ Cliente "${nombre}" agregado con ${maquinas.length} máquina(s).`, 'verde');
+}
+
+function editarCliente(id) {
+  const cl = DB.clientes.find(c => c.id === id);
+  if (!cl) return;
+  document.getElementById('cli-nombre').value   = cl.nombre;
+  document.getElementById('cli-maquinas').value = cl.maquinas.join(', ');
+  // Elimina el registro actual y el usuario lo guarda de nuevo con el botón Agregar
+  DB.clientes = DB.clientes.filter(c => c.id !== id);
+  guardarDB();
+  renderClientes();
+  mostrarMensaje('cli-mensaje', 'Editando cliente — modifica los datos y presiona "Agregar cliente".', 'verde');
+}
+
+function eliminarCliente(id) {
+  if (!confirm('¿Eliminar este cliente y todas sus cargas?')) return;
+  DB.clientes = DB.clientes.filter(c => c.id !== id);
+  DB.cargas   = DB.cargas.filter(c => c.clienteId !== id);
+  guardarDB();
+  renderClientes();
+  poblarFiltros();
+}
+
+function renderClientes() {
+  const tbody = document.querySelector('#tabla-clientes tbody');
+  if (!DB.clientes.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px">Sin clientes registrados</td></tr>';
+    return;
+  }
+  tbody.innerHTML = DB.clientes.map(cl => {
+    const cargas = DB.cargas.filter(c => c.clienteId === cl.id);
+    const total  = cargas.reduce((s, c) => s + (c.total || 0), 0);
+    return `<tr>
+      <td><strong>${cl.nombre}</strong></td>
+      <td>${cl.maquinas.map(m => `<span class="badge badge-cafe">${m}</span>`).join(' ')}</td>
+      <td>${cargas.length}</td>
+      <td><strong>${fmt(total)}</strong></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-secondary" style="padding:5px 11px;font-size:.78rem" onclick="editarCliente(${cl.id})">Editar</button>
+        <button class="btn btn-danger" onclick="eliminarCliente(${cl.id})">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  HISTORIAL
+// ══════════════════════════════════════════════════════════
+function buildTheadHistorial(thead) {
+  thead.innerHTML = `<th>Fecha</th><th>Cliente</th><th>Máquina</th>`
+    + PRODUCTOS.map(p => `<th>${p.icon} ${p.nombre}<br><small style="font-weight:400;opacity:.8">${p.unidad}</small></th>`).join('')
+    + `<th>Total</th><th>Obs.</th><th></th>`;
+}
+
+function poblarFiltros() {
+  const filCli = document.getElementById('fil-cliente');
+  const filMaq = document.getElementById('fil-maquina');
+  const curCli = filCli.value;
+  filCli.innerHTML = '<option value="">Todos</option>';
+  DB.clientes.forEach(cl => {
+    filCli.innerHTML += `<option value="${cl.id}" ${cl.id == curCli ? 'selected':''}>${cl.nombre}</option>`;
+  });
+  const maquinas = [...new Set(DB.cargas.map(c => c.maquina))].sort();
+  filMaq.innerHTML = '<option value="">Todas</option>';
+  maquinas.forEach(m => { filMaq.innerHTML += `<option value="${m}">${m}</option>`; });
+}
+
+function aplicarFiltros() {
+  const clienteId = parseInt(document.getElementById('fil-cliente').value) || null;
+  const maquina   = document.getElementById('fil-maquina').value;
+  const desde     = document.getElementById('fil-desde').value;
+  const hasta     = document.getElementById('fil-hasta').value;
+  let datos = [...DB.cargas];
+  if (clienteId) datos = datos.filter(c => c.clienteId === clienteId);
+  if (maquina)   datos = datos.filter(c => c.maquina === maquina);
+  if (desde)     datos = datos.filter(c => c.fecha >= desde);
+  if (hasta)     datos = datos.filter(c => c.fecha <= hasta);
+  datos.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  renderTablaHistorial(datos);
+}
+
+function limpiarFiltros() {
+  ['fil-cliente','fil-maquina'].forEach(id => document.getElementById(id).value = '');
+  ['fil-desde','fil-hasta'].forEach(id => document.getElementById(id).value = '');
+  aplicarFiltros();
+}
+
+function renderHistorial() {
+  buildTheadHistorial(document.getElementById('thead-historial'));
+  poblarFiltros();
+  aplicarFiltros();
+}
+
+function renderTablaHistorial(datos) {
+  const tbody = document.querySelector('#tabla-historial tbody');
+  if (!datos.length) {
+    tbody.innerHTML = `<tr><td colspan="${5 + PRODUCTOS.length + 3}" style="text-align:center;color:#aaa;padding:20px">Sin registros</td></tr>`;
+    document.getElementById('historial-totales').innerHTML = '';
+    return;
+  }
+  tbody.innerHTML = datos.map(c => {
+    const cl = DB.clientes.find(x => x.id === c.clienteId);
+    const cants = c.cantidades || {};
+    return `<tr>
+      <td>${c.fecha}</td>
+      <td>${cl ? cl.nombre : '<em style="color:#aaa">Eliminado</em>'}</td>
+      <td><span class="badge badge-cafe">${c.maquina}</span></td>
+      ${PRODUCTOS.map(p => `<td>${cants[p.id] ? cants[p.id] : '<span style="color:#ccc">—</span>'}</td>`).join('')}
+      <td><strong>${fmt(c.total)}</strong></td>
+      <td><span class="text-muted">${c.obs || ''}</span></td>
+      <td><button class="btn btn-danger" style="padding:5px 10px" onclick="eliminarCarga(${c.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+  const totalGeneral = datos.reduce((s, c) => s + (c.total || 0), 0);
+  document.getElementById('historial-totales').innerHTML =
+    `<strong>${datos.length} carga(s) filtradas &mdash; Total: ${fmt(totalGeneral)}</strong>`;
+}
+
+function eliminarCarga(id) {
+  if (!confirm('¿Eliminar esta carga?')) return;
+  DB.cargas = DB.cargas.filter(c => c.id !== id);
+  guardarDB();
+  renderHistorial();
+  renderDashboard();
+}
+
+// ══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════════════
+function renderDashboard() {
+  const totalCargas   = DB.cargas.length;
+  const totalClientes = DB.clientes.length;
+  const totalCosto    = DB.cargas.reduce((s, c) => s + (c.total || 0), 0);
+  const maquinas      = new Set(DB.cargas.map(c => c.maquina)).size;
+
+  // Totales por producto
+  const totProd = {};
+  PRODUCTOS.forEach(p => { totProd[p.id] = 0; });
+  DB.cargas.forEach(c => {
+    PRODUCTOS.forEach(p => { totProd[p.id] += (c.cantidades?.[p.id] || 0); });
+  });
+
+  document.getElementById('cards-resumen').innerHTML =
+    `<div class="card"><div class="icon">📋</div><div class="valor">${totalCargas}</div><div class="label">Cargas registradas</div></div>
+     <div class="card"><div class="icon">👥</div><div class="valor">${totalClientes}</div><div class="label">Clientes</div></div>
+     <div class="card"><div class="icon">🤖</div><div class="valor">${maquinas}</div><div class="label">Máquinas activas</div></div>
+     <div class="card"><div class="icon">💰</div><div class="valor">${fmt(totalCosto)}</div><div class="label">Costo total acumulado</div></div>`
+    + PRODUCTOS.map(p => `
+     <div class="card"><div class="icon">${p.icon}</div><div class="valor">${totProd[p.id]}</div><div class="label">${p.nombre} (${p.unidad})</div></div>`
+    ).join('');
+
+  // Tabla de cargas recientes
+  const thead = document.getElementById('thead-recientes');
+  buildTheadHistorial(thead);
+
+  const tbody = document.querySelector('#tabla-recientes tbody');
+  const recientes = [...DB.cargas].sort((a,b) => b.fecha.localeCompare(a.fecha)).slice(0, 10);
+  if (!recientes.length) {
+    tbody.innerHTML = `<tr><td colspan="${5 + PRODUCTOS.length}" style="text-align:center;color:#aaa;padding:20px">Aún no hay cargas registradas</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = recientes.map(c => {
+    const cl = DB.clientes.find(x => x.id === c.clienteId);
+    const cants = c.cantidades || {};
+    return `<tr>
+      <td>${c.fecha}</td>
+      <td>${cl ? cl.nombre : '<em style="color:#aaa">Eliminado</em>'}</td>
+      <td><span class="badge badge-cafe">${c.maquina}</span></td>
+      ${PRODUCTOS.map(p => `<td>${cants[p.id] ? cants[p.id] : '<span style="color:#ccc">—</span>'}</td>`).join('')}
+      <td><strong>${fmt(c.total)}</strong></td>
+      <td></td><td></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  EXPORTAR A EXCEL
+// ══════════════════════════════════════════════════════════
+// Variable para guardar el último set de datos filtrados
+let _datosFiltrados = [];
+
+// Sobreescribir renderTablaHistorial para capturar el filtro actual
+const _origRender = renderTablaHistorial;
+function renderTablaHistorial(datos) {
+  _datosFiltrados = datos;
+  _origRender(datos);
+}
+
+function exportarExcel(modo) {
+  const datos = modo === 'todo'
+    ? [...DB.cargas].sort((a,b) => b.fecha.localeCompare(a.fecha))
+    : _datosFiltrados;
+
+  if (!datos.length) {
+    alert('No hay datos para exportar. Verifica los filtros o registra cargas primero.');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Hoja 1: Detalle de cargas ──────────────────────────
+  const cabecera = [
+    'Fecha', 'Cliente', 'N° Máquina',
+    ...PRODUCTOS.map(p => `${p.nombre} (${p.unidad})`),
+    'Total ($)', 'Observaciones'
+  ];
+
+  const filas = datos.map(c => {
+    const cl = DB.clientes.find(x => x.id === c.clienteId);
+    return [
+      c.fecha,
+      cl ? cl.nombre : 'Cliente eliminado',
+      c.maquina,
+      ...PRODUCTOS.map(p => c.cantidades?.[p.id] || 0),
+      c.total || 0,
+      c.obs || ''
+    ];
+  });
+
+  // Fila de totales al final
+  const totales = [
+    'TOTAL', '', '',
+    ...PRODUCTOS.map(p => datos.reduce((s, c) => s + (c.cantidades?.[p.id] || 0), 0)),
+    datos.reduce((s, c) => s + (c.total || 0), 0),
+    ''
+  ];
+
+  const wsCargas = XLSX.utils.aoa_to_sheet([cabecera, ...filas, [], totales]);
+
+  // Ancho de columnas
+  wsCargas['!cols'] = [
+    { wch: 12 }, { wch: 24 }, { wch: 14 },
+    ...PRODUCTOS.map(() => ({ wch: 18 })),
+    { wch: 14 }, { wch: 28 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, wsCargas, 'Cargas');
+
+  // ── Hoja 2: Resumen por cliente ────────────────────────
+  const cabCliente = [
+    'Cliente', 'N° Cargas',
+    ...PRODUCTOS.map(p => `${p.nombre} (${p.unidad})`),
+    'Total ($)'
+  ];
+
+  const cargasUsadas = modo === 'todo' ? DB.cargas : _datosFiltrados;
+  const clientesEnDatos = [...new Set(cargasUsadas.map(c => c.clienteId))];
+
+  const filasClientes = clientesEnDatos.map(cid => {
+    const cl = DB.clientes.find(x => x.id === cid);
+    const mis = cargasUsadas.filter(c => c.clienteId === cid);
+    return [
+      cl ? cl.nombre : 'Cliente eliminado',
+      mis.length,
+      ...PRODUCTOS.map(p => mis.reduce((s, c) => s + (c.cantidades?.[p.id] || 0), 0)),
+      mis.reduce((s, c) => s + (c.total || 0), 0)
+    ];
+  });
+
+  const wsClientes = XLSX.utils.aoa_to_sheet([cabCliente, ...filasClientes]);
+  wsClientes['!cols'] = [
+    { wch: 24 }, { wch: 12 },
+    ...PRODUCTOS.map(() => ({ wch: 18 })),
+    { wch: 14 }
+  ];
+  XLSX.utils.book_append_sheet(wb, wsClientes, 'Resumen por Cliente');
+
+  // ── Hoja 3: Precios vigentes ───────────────────────────
+  const wsPrecios = XLSX.utils.aoa_to_sheet([
+    ['Producto', 'Unidad', 'Precio ($)'],
+    ...PRODUCTOS.map(p => [p.nombre, p.unidad, DB.precios[p.id] || 0])
+  ]);
+  wsPrecios['!cols'] = [{ wch: 20 }, { wch: 10 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, wsPrecios, 'Precios');
+
+  // ── Descargar ──────────────────────────────────────────
+  const fecha = hoy().replace(/-/g, '');
+  const sufijo = modo === 'todo' ? 'completo' : 'filtrado';
+  XLSX.writeFile(wb, `CafeBreak_Cargas_${sufijo}_${fecha}.xlsx`);
+}
+
+// ══════════════════════════════════════════════════════════
+//  QR CODES
+// ══════════════════════════════════════════════════════════
+function guardarBaseUrl() {
+  localStorage.setItem('0cs_base_url', document.getElementById('qr-base-url').value.trim());
+}
+
+function getBaseUrl() {
+  const guardada = localStorage.getItem('0cs_base_url') || '';
+  return guardada || window.location.href.split('?')[0];
+}
+
+function renderQRs() {
+  const cont = document.getElementById('qr-contenedor');
+  if (!DB.clientes.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">No hay clientes registrados aún.</div>';
+    return;
+  }
+
+  const base = getBaseUrl();
+  cont.innerHTML = '<div class="qr-grid" id="qr-grid"></div>';
+  const grid = document.getElementById('qr-grid');
+
+  DB.clientes.forEach(cl => {
+    cl.maquinas.forEach(maq => {
+      const url = `${base}?cliente=${cl.id}&maquina=${encodeURIComponent(maq)}`;
+
+      const card = document.createElement('div');
+      card.className = 'qr-card';
+      card.innerHTML = `
+        <div class="qr-cliente">${cl.nombre}</div>
+        <div class="qr-maquina">${maq}</div>
+        <canvas id="qr-${cl.id}-${maq.replace(/\W/g,'_')}"></canvas>
+        <button class="btn btn-secondary" style="font-size:.78rem;padding:7px 12px"
+          onclick="descargarQR('qr-${cl.id}-${maq.replace(/\W/g,'_')}', '${maq}')">
+          Descargar PNG
+        </button>`;
+      grid.appendChild(card);
+
+      QRCode.toCanvas(
+        document.getElementById(`qr-${cl.id}-${maq.replace(/\W/g,'_')}`),
+        url,
+        { width: 160, margin: 2, color: { dark: '#18181b', light: '#ffffff' } },
+        err => { if (err) console.error(err); }
+      );
+    });
+  });
+}
+
+function descargarQR(canvasId, maquina) {
+  const canvas = document.getElementById(canvasId);
+  const link = document.createElement('a');
+  link.download = `QR_${maquina.replace(/\s/g,'_')}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// ── Leer parámetros URL al cargar (para el celular) ────────
+function leerParamsURL() {
+  const params = new URLSearchParams(window.location.search);
+  const clienteId = parseInt(params.get('cliente'));
+  const maquina   = params.get('maquina');
+  if (!clienteId || !maquina) return;
+
+  // Navegar a Nueva Carga
+  const btnNuevaCarga = document.querySelector('nav button:nth-child(2)');
+  mostrarSeccion('nueva-carga', btnNuevaCarga);
+
+  // Pre-seleccionar cliente y máquina
+  const selCliente = document.getElementById('nc-cliente');
+  selCliente.value = clienteId;
+  actualizarMaquinasNC();
+
+  setTimeout(() => {
+    const selMaquina = document.getElementById('nc-maquina');
+    selMaquina.value = maquina;
+  }, 50);
+}
+
+// ── Cargar URL guardada en el input de configuración ───────
+function inicializarQR() {
+  const saved = localStorage.getItem('0cs_base_url') || '';
+  const input = document.getElementById('qr-base-url');
+  if (input) input.value = saved;
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+cargarDB();
+document.getElementById('nc-fecha').value = hoy();
+buildProductosInputs();
+poblarSelectClientes();
+poblarFiltros();
+renderDashboard();
+inicializarQR();
+leerParamsURL();
+</script>
+</body>
+</html>
