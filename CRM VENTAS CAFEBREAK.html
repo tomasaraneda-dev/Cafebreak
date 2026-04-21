@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Ventas - Cafe Break</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f5;
+    --white: #ffffff;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-800: #1f2937;
+    --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 20px; font-weight: 700; color: var(--primary); }
+  .logo span { color: var(--gray-800); }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+
+  /* BUTTONS */
+  .btn {
+    padding: 8px 16px; border: none; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-ghost { background: transparent; color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .btn-ghost:hover { background: var(--gray-100); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* METRICS */
+  .metrics-bar {
+    display: flex; gap: 12px; padding: 16px 24px;
+    flex-wrap: wrap;
+  }
+  .metric-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 14px 20px; flex: 1; min-width: 160px;
+    box-shadow: var(--shadow);
+  }
+  .metric-label { font-size: 12px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; }
+  .metric-value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .metric-value.blue { color: var(--primary); }
+  .metric-value.green { color: var(--success); }
+  .metric-value.orange { color: var(--warning); }
+  .metric-value.red { color: var(--danger); }
+
+  /* SEARCH & FILTERS */
+  .toolbar {
+    padding: 0 24px 12px;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .search-box {
+    position: relative; flex: 1; min-width: 200px; max-width: 320px;
+  }
+  .search-box input {
+    width: 100%; padding: 8px 12px 8px 36px;
+    border: 1px solid var(--gray-200); border-radius: var(--radius-sm);
+    font-size: 14px; background: var(--white);
+    outline: none; transition: border-color .15s;
+  }
+  .search-box input:focus { border-color: var(--primary); }
+  .search-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--gray-400); font-size: 15px;
+  }
+  select.filter {
+    padding: 8px 12px; border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm); font-size: 14px;
+    background: var(--white); cursor: pointer; outline: none;
+  }
+  select.filter:focus { border-color: var(--primary); }
+
+  /* KANBAN */
+  .kanban-wrapper {
+    overflow-x: auto; padding: 0 24px 32px;
+  }
+  .kanban {
+    display: flex; gap: 14px; min-width: max-content;
+    align-items: flex-start;
+  }
+  .column {
+    width: 270px; flex-shrink: 0;
+    background: var(--gray-100); border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .column-header {
+    padding: 12px 14px; display: flex;
+    align-items: center; justify-content: space-between;
+    font-weight: 600; font-size: 13px;
+    border-bottom: 2px solid transparent;
+  }
+  .col-count {
+    background: rgba(0,0,0,.1); border-radius: 20px;
+    padding: 2px 8px; font-size: 12px; font-weight: 600;
+  }
+  .column-body {
+    padding: 10px; min-height: 200px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .column-body.drag-over { background: rgba(37,99,235,.06); }
+
+  /* CARD */
+  .card {
+    background: var(--white); border-radius: var(--radius-sm);
+    padding: 12px; box-shadow: var(--shadow);
+    cursor: grab; transition: box-shadow .15s, transform .15s;
+    border-left: 3px solid transparent;
+  }
+  .card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .card.dragging { opacity: .5; cursor: grabbing; }
+  .card-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .card-company { font-size: 12px; color: var(--gray-400); margin-bottom: 8px; }
+  .card-amount {
+    font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 6px;
+  }
+  .card-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: var(--gray-400); margin-top: 6px;
+  }
+  .card-actions {
+    display: flex; gap: 6px; margin-top: 8px;
+    opacity: 0; transition: opacity .15s;
+  }
+  .card:hover .card-actions { opacity: 1; }
+  .tag {
+    display: inline-block; padding: 2px 7px;
+    border-radius: 20px; font-size: 11px; font-weight: 500;
+  }
+  .card-assignee {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--gray-600);
+  }
+  .avatar {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #fff; background: var(--primary);
+  }
+
+  /* MODAL */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 200; display: none; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--white); border-radius: var(--radius);
+    width: 100%; max-width: 520px; max-height: 90vh;
+    overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    animation: slideUp .2s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-header {
+    padding: 20px 24px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .modal-title { font-size: 17px; font-weight: 700; }
+  .modal-close {
+    background: none; border: none; font-size: 20px;
+    cursor: pointer; color: var(--gray-400); line-height: 1;
+    padding: 4px;
+  }
+  .modal-close:hover { color: var(--gray-800); }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--gray-200);
+    display: flex; justify-content: flex-end; gap: 10px;
+  }
+
+  /* FORM */
+  .form-group { margin-bottom: 16px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; color: var(--gray-600); }
+  input, select, textarea {
+    width: 100%; padding: 9px 12px;
+    border: 1px solid var(--gray-200); border-radius: var(--radius-sm);
+    font-size: 14px; outline: none; transition: border-color .15s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+  textarea { resize: vertical; min-height: 80px; }
+  .required { color: var(--danger); }
+
+  /* DETAIL VIEW */
+  .detail-field { margin-bottom: 14px; }
+  .detail-label { font-size: 12px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+  .detail-value { font-size: 15px; color: var(--gray-800); }
+  .stage-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  }
+  .notes-box {
+    background: var(--gray-100); border-radius: var(--radius-sm);
+    padding: 12px; font-size: 14px; color: var(--gray-600);
+    white-space: pre-wrap; min-height: 60px;
+  }
+
+  /* EMPTY STATE */
+  .empty-col {
+    text-align: center; padding: 24px 12px;
+    color: var(--gray-400); font-size: 13px;
+  }
+
+  /* TOAST */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px;
+    z-index: 999; display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    background: var(--gray-800); color: #fff; padding: 12px 18px;
+    border-radius: var(--radius-sm); font-size: 14px;
+    box-shadow: var(--shadow-md);
+    animation: fadeInUp .2s ease;
+    min-width: 220px;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* COLUMN COLORS */
+  .col-prospecto .column-header { border-color: #6366f1; background: #eef2ff; color: #4338ca; }
+  .col-contacto .column-header { border-color: #0ea5e9; background: #e0f2fe; color: #0369a1; }
+  .col-propuesta .column-header { border-color: #f59e0b; background: #fef3c7; color: #b45309; }
+  .col-negociacion .column-header { border-color: #f97316; background: #fff7ed; color: #c2410c; }
+  .col-ganado .column-header { border-color: #22c55e; background: #dcfce7; color: #15803d; }
+  .col-perdido .column-header { border-color: #ef4444; background: #fee2e2; color: #b91c1c; }
+
+  .card.col-prospecto { border-left-color: #6366f1; }
+  .card.col-contacto { border-left-color: #0ea5e9; }
+  .card.col-propuesta { border-left-color: #f59e0b; }
+  .card.col-negociacion { border-left-color: #f97316; }
+  .card.col-ganado { border-left-color: #22c55e; }
+  .card.col-perdido { border-left-color: #ef4444; }
+
+  .stage-badge.col-prospecto { background: #eef2ff; color: #4338ca; }
+  .stage-badge.col-contacto { background: #e0f2fe; color: #0369a1; }
+  .stage-badge.col-propuesta { background: #fef3c7; color: #b45309; }
+  .stage-badge.col-negociacion { background: #fff7ed; color: #c2410c; }
+  .stage-badge.col-ganado { background: #dcfce7; color: #15803d; }
+  .stage-badge.col-perdido { background: #fee2e2; color: #b91c1c; }
+
+  /* PRIORITY */
+  .priority-alta { background: #fee2e2; color: #b91c1c; }
+  .priority-media { background: #fef3c7; color: #b45309; }
+  .priority-baja { background: #dcfce7; color: #15803d; }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .metrics-bar { padding: 12px; }
+    .toolbar { padding: 0 12px 12px; }
+    .kanban-wrapper { padding: 0 12px 24px; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">Cafe Break <span>| CRM Ventas</span></div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-primary" onclick="openNewModal()">+ Nueva Oportunidad</button>
+  </div>
+</header>
+
+<div class="metrics-bar" id="metricsBar"></div>
+
+<div class="toolbar">
+  <div class="search-box">
+    <span class="search-icon">&#128269;</span>
+    <input type="text" id="searchInput" placeholder="Buscar cliente, empresa..." oninput="renderAll()">
+  </div>
+  <select class="filter" id="filterResponsable" onchange="renderAll()">
+    <option value="">Todos los responsables</option>
+  </select>
+  <select class="filter" id="filterPrioridad" onchange="renderAll()">
+    <option value="">Todas las prioridades</option>
+    <option value="Alta">Alta</option>
+    <option value="Media">Media</option>
+    <option value="Baja">Baja</option>
+  </select>
+  <button class="btn btn-ghost btn-sm" onclick="exportCSV()">&#128190; Exportar CSV</button>
+</div>
+
+<div class="kanban-wrapper">
+  <div class="kanban" id="kanban"></div>
+</div>
+
+<!-- MODAL FORM -->
+<div class="overlay" id="formOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="formTitle">Nueva Oportunidad</div>
+      <button class="modal-close" onclick="closeFormModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cliente <span class="required">*</span></label>
+          <input type="text" id="fCliente" placeholder="Nombre del cliente">
+        </div>
+        <div class="form-group">
+          <label>Empresa</label>
+          <input type="text" id="fEmpresa" placeholder="Nombre de empresa">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Monto estimado ($)</label>
+          <input type="number" id="fMonto" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>Fecha cierre estimada</label>
+          <input type="date" id="fFecha">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Etapa <span class="required">*</span></label>
+          <select id="fEtapa">
+            <option value="prospecto">Prospecto</option>
+            <option value="contacto">Contacto Realizado</option>
+            <option value="propuesta">Propuesta Enviada</option>
+            <option value="negociacion">Negociacion</option>
+            <option value="ganado">Cerrado Ganado</option>
+            <option value="perdido">Cerrado Perdido</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="fPrioridad">
+            <option value="Media">Media</option>
+            <option value="Alta">Alta</option>
+            <option value="Baja">Baja</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Responsable</label>
+        <input type="text" id="fResponsable" placeholder="Nombre del vendedor">
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="fNotas" placeholder="Observaciones, proximos pasos..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeFormModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveOpportunity()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Detalle de Oportunidad</div>
+      <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="detailDelete" onclick="">Eliminar</button>
+      <button class="btn btn-ghost" onclick="closeDetailModal()">Cerrar</button>
+      <button class="btn btn-primary" id="detailEdit" onclick="">Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const STAGES = [
+  { id: 'prospecto',    label: 'Prospecto',          icon: '&#127775;' },
+  { id: 'contacto',    label: 'Contacto Realizado',  icon: '&#128222;' },
+  { id: 'propuesta',   label: 'Propuesta Enviada',   icon: '&#128196;' },
+  { id: 'negociacion', label: 'Negociacion',         icon: '&#129309;' },
+  { id: 'ganado',      label: 'Cerrado Ganado',      icon: '&#127942;' },
+  { id: 'perdido',     label: 'Cerrado Perdido',     icon: '&#10060;'  },
+];
+
+// ---- DATA ----
+function loadData() {
+  try { return JSON.parse(localStorage.getItem('crm_oportunidades') || '[]'); }
+  catch { return []; }
+}
+function saveData(data) {
+  localStorage.setItem('crm_oportunidades', JSON.stringify(data));
+}
+function getData() { return loadData(); }
+
+// ---- RENDER ----
+function renderAll() {
+  renderMetrics();
+  renderKanban();
+  updateResponsableFilter();
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const resp = document.getElementById('filterResponsable').value;
+  const prio = document.getElementById('filterPrioridad').value;
+  return getData().filter(o => {
+    if (q && !o.cliente.toLowerCase().includes(q) && !(o.empresa||'').toLowerCase().includes(q)) return false;
+    if (resp && o.responsable !== resp) return false;
+    if (prio && o.prioridad !== prio) return false;
+    return true;
+  });
+}
+
+function renderMetrics() {
+  const all = getData();
+  const active = all.filter(o => o.etapa !== 'perdido');
+  const ganados = all.filter(o => o.etapa === 'ganado');
+  const pipeline = active.reduce((s, o) => s + (parseFloat(o.monto) || 0), 0);
+  const ganado = ganados.reduce((s, o) => s + (parseFloat(o.monto) || 0), 0);
+  const cerrados = all.filter(o => o.etapa === 'ganado' || o.etapa === 'perdido');
+  const tasa = cerrados.length ? Math.round((ganados.length / cerrados.length) * 100) : 0;
+
+  document.getElementById('metricsBar').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Total Oportunidades</div>
+      <div class="metric-value blue">${all.length}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Pipeline Activo</div>
+      <div class="metric-value blue">${formatMoney(pipeline)}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Cerrado Ganado</div>
+      <div class="metric-value green">${formatMoney(ganado)}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Tasa de Cierre</div>
+      <div class="metric-value ${tasa >= 60 ? 'green' : tasa >= 30 ? 'orange' : 'red'}">${tasa}%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">En Negociacion</div>
+      <div class="metric-value orange">${all.filter(o=>o.etapa==='negociacion').length}</div>
+    </div>
+  `;
+}
+
+function renderKanban() {
+  const filtered = getFiltered();
+  const kanban = document.getElementById('kanban');
+  kanban.innerHTML = '';
+
+  STAGES.forEach(stage => {
+    const cards = filtered.filter(o => o.etapa === stage.id);
+    const col = document.createElement('div');
+    col.className = `column col-${stage.id}`;
+    col.dataset.stage = stage.id;
+
+    const total = cards.reduce((s, o) => s + (parseFloat(o.monto) || 0), 0);
+
+    col.innerHTML = `
+      <div class="column-header">
+        <span>${stage.icon} ${stage.label}</span>
+        <span class="col-count">${cards.length}</span>
+      </div>
+      <div class="column-body" id="col-body-${stage.id}"
+        ondragover="onDragOver(event)"
+        ondragleave="onDragLeave(event)"
+        ondrop="onDrop(event, '${stage.id}')">
+        ${cards.length === 0 ? '<div class="empty-col">Sin oportunidades</div>' : ''}
+        ${cards.map(c => renderCard(c)).join('')}
+        ${total > 0 ? `<div style="text-align:right;font-size:12px;color:var(--gray-400);padding:4px 2px">Total: ${formatMoney(total)}</div>` : ''}
+      </div>`;
+    kanban.appendChild(col);
+  });
+}
+
+function renderCard(o) {
+  const initials = (o.responsable || '?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const today = new Date(); today.setHours(0,0,0,0);
+  let fechaWarning = '';
+  if (o.fecha) {
+    const f = new Date(o.fecha + 'T00:00:00');
+    const diff = Math.ceil((f - today) / 86400000);
+    if (diff < 0 && o.etapa !== 'ganado' && o.etapa !== 'perdido')
+      fechaWarning = ` <span style="color:var(--danger)">&#9888;</span>`;
+    else if (diff <= 7 && diff >= 0 && o.etapa !== 'ganado' && o.etapa !== 'perdido')
+      fechaWarning = ` <span style="color:var(--warning)">&#9203;</span>`;
+  }
+  return `
+    <div class="card col-${o.etapa}" draggable="true"
+      id="card-${o.id}"
+      ondragstart="onDragStart(event, '${o.id}')"
+      ondragend="onDragEnd(event)"
+      onclick="openDetail('${o.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+        <div class="card-title">${esc(o.cliente)}</div>
+        <span class="tag priority-${(o.prioridad||'Media').toLowerCase()}">${o.prioridad||'Media'}</span>
+      </div>
+      ${o.empresa ? `<div class="card-company">&#127970; ${esc(o.empresa)}</div>` : ''}
+      ${o.monto ? `<div class="card-amount">${formatMoney(o.monto)}</div>` : ''}
+      <div class="card-meta">
+        <span class="card-assignee">
+          <span class="avatar">${initials}</span>
+          ${esc(o.responsable || 'Sin asignar')}
+        </span>
+        <span>${o.fecha ? formatDate(o.fecha) + fechaWarning : ''}</span>
+      </div>
+      <div class="card-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-ghost btn-sm" onclick="openEdit('${o.id}')">&#9998; Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteOpp('${o.id}')">&#128465;</button>
+      </div>
+    </div>`;
+}
+
+function updateResponsableFilter() {
+  const sel = document.getElementById('filterResponsable');
+  const current = sel.value;
+  const responsables = [...new Set(getData().map(o => o.responsable).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todos los responsables</option>' +
+    responsables.map(r => `<option value="${esc(r)}" ${r === current ? 'selected' : ''}>${esc(r)}</option>`).join('');
+}
+
+// ---- DRAG & DROP ----
+let dragId = null;
+function onDragStart(e, id) {
+  dragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => document.getElementById('card-' + id)?.classList.add('dragging'), 0);
+}
+function onDragEnd(e) {
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('dragging'));
+  document.querySelectorAll('.column-body').forEach(c => c.classList.remove('drag-over'));
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function onDrop(e, stageId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!dragId) return;
+  const data = getData();
+  const opp = data.find(o => o.id === dragId);
+  if (opp && opp.etapa !== stageId) {
+    opp.etapa = stageId;
+    saveData(data);
+    renderAll();
+    toast(`Movido a: ${STAGES.find(s=>s.id===stageId)?.label}`, 'success');
+  }
+  dragId = null;
+}
+
+// ---- CRUD ----
+function openNewModal() {
+  clearForm();
+  document.getElementById('editId').value = '';
+  document.getElementById('formTitle').textContent = 'Nueva Oportunidad';
+  document.getElementById('formOverlay').classList.add('open');
+  document.getElementById('fCliente').focus();
+}
+function openEdit(id) {
+  const opp = getData().find(o => o.id === id);
+  if (!opp) return;
+  clearForm();
+  document.getElementById('editId').value = id;
+  document.getElementById('formTitle').textContent = 'Editar Oportunidad';
+  document.getElementById('fCliente').value = opp.cliente || '';
+  document.getElementById('fEmpresa').value = opp.empresa || '';
+  document.getElementById('fMonto').value = opp.monto || '';
+  document.getElementById('fFecha').value = opp.fecha || '';
+  document.getElementById('fEtapa').value = opp.etapa || 'prospecto';
+  document.getElementById('fPrioridad').value = opp.prioridad || 'Media';
+  document.getElementById('fResponsable').value = opp.responsable || '';
+  document.getElementById('fNotas').value = opp.notas || '';
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.getElementById('formOverlay').classList.add('open');
+  document.getElementById('fCliente').focus();
+}
+function clearForm() {
+  ['fCliente','fEmpresa','fMonto','fFecha','fResponsable','fNotas'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fEtapa').value = 'prospecto';
+  document.getElementById('fPrioridad').value = 'Media';
+}
+function closeFormModal() {
+  document.getElementById('formOverlay').classList.remove('open');
+}
+function saveOpportunity() {
+  const cliente = document.getElementById('fCliente').value.trim();
+  if (!cliente) { toast('El nombre del cliente es requerido', 'error'); return; }
+  const id = document.getElementById('editId').value;
+  const data = getData();
+  const opp = {
+    cliente,
+    empresa: document.getElementById('fEmpresa').value.trim(),
+    monto: document.getElementById('fMonto').value,
+    fecha: document.getElementById('fFecha').value,
+    etapa: document.getElementById('fEtapa').value,
+    prioridad: document.getElementById('fPrioridad').value,
+    responsable: document.getElementById('fResponsable').value.trim(),
+    notas: document.getElementById('fNotas').value.trim(),
+  };
+  if (id) {
+    const idx = data.findIndex(o => o.id === id);
+    if (idx !== -1) { data[idx] = { ...data[idx], ...opp }; }
+    toast('Oportunidad actualizada', 'success');
+  } else {
+    opp.id = 'opp_' + Date.now();
+    opp.creado = new Date().toISOString().split('T')[0];
+    data.push(opp);
+    toast('Oportunidad creada', 'success');
+  }
+  saveData(data);
+  closeFormModal();
+  renderAll();
+}
+function deleteOpp(id) {
+  if (!confirm('¿Eliminar esta oportunidad?')) return;
+  const data = getData().filter(o => o.id !== id);
+  saveData(data);
+  renderAll();
+  toast('Oportunidad eliminada');
+  closeDetailModal();
+}
+
+// ---- DETAIL ----
+function openDetail(id) {
+  const opp = getData().find(o => o.id === id);
+  if (!opp) return;
+  const stage = STAGES.find(s => s.id === opp.etapa);
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-field">
+      <div class="detail-label">Cliente</div>
+      <div class="detail-value" style="font-size:18px;font-weight:700">${esc(opp.cliente)}</div>
+    </div>
+    ${opp.empresa ? `<div class="detail-field"><div class="detail-label">Empresa</div><div class="detail-value">${esc(opp.empresa)}</div></div>` : ''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="detail-field">
+        <div class="detail-label">Monto</div>
+        <div class="detail-value" style="font-size:20px;font-weight:700;color:var(--primary)">${opp.monto ? formatMoney(opp.monto) : '—'}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Prioridad</div>
+        <div><span class="tag priority-${(opp.prioridad||'Media').toLowerCase()}">${opp.prioridad||'Media'}</span></div>
+      </div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">Etapa Actual</div>
+      <div><span class="stage-badge col-${opp.etapa}">${stage?.icon} ${stage?.label}</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="detail-field">
+        <div class="detail-label">Responsable</div>
+        <div class="detail-value">${esc(opp.responsable || '—')}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Cierre Estimado</div>
+        <div class="detail-value">${opp.fecha ? formatDate(opp.fecha) : '—'}</div>
+      </div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">Notas</div>
+      <div class="notes-box">${esc(opp.notas || 'Sin notas.')}</div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">Mover a etapa</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+        ${STAGES.filter(s=>s.id!==opp.etapa).map(s=>`
+          <button class="btn btn-ghost btn-sm" onclick="moveStage('${id}','${s.id}')">${s.icon} ${s.label}</button>
+        `).join('')}
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--gray-400);margin-top:8px">Creado: ${opp.creado || '—'}</div>
+  `;
+  document.getElementById('detailEdit').onclick = () => openEdit(id);
+  document.getElementById('detailDelete').onclick = () => deleteOpp(id);
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function closeDetailModal() {
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+function moveStage(id, stage) {
+  const data = getData();
+  const opp = data.find(o => o.id === id);
+  if (opp) {
+    opp.etapa = stage;
+    saveData(data);
+    renderAll();
+    closeDetailModal();
+    toast(`Movido a: ${STAGES.find(s=>s.id===stage)?.label}`, 'success');
+  }
+}
+
+// ---- EXPORT ----
+function exportCSV() {
+  const data = getData();
+  if (!data.length) { toast('No hay datos para exportar', 'error'); return; }
+  const headers = ['Cliente','Empresa','Monto','Etapa','Prioridad','Responsable','Cierre Estimado','Notas','Creado'];
+  const rows = data.map(o => [
+    o.cliente, o.empresa||'', o.monto||0,
+    STAGES.find(s=>s.id===o.etapa)?.label||o.etapa,
+    o.prioridad||'', o.responsable||'', o.fecha||'',
+    (o.notas||'').replace(/\n/g,' '), o.creado||''
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `crm-ventas-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  toast('CSV exportado correctamente', 'success');
+}
+
+// ---- UTILS ----
+function formatMoney(n) {
+  return '$' + Number(n).toLocaleString('es-CL');
+}
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---- TOAST ----
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ---- CLOSE ON OVERLAY CLICK ----
+document.getElementById('formOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeFormModal();
+});
+document.getElementById('detailOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeDetailModal();
+});
+
+// ---- INIT ----
+renderAll();
+</script>
+</body>
+</html>
